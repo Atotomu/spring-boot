@@ -16,7 +16,10 @@
 
 package org.springframework.boot.autoconfigure.data.elasticsearch;
 
+import java.time.Duration;
+
 import org.junit.jupiter.api.Test;
+import org.testcontainers.elasticsearch.ElasticsearchContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -28,7 +31,6 @@ import org.springframework.boot.autoconfigure.data.elasticsearch.city.CityReposi
 import org.springframework.boot.autoconfigure.data.empty.EmptyDataPackage;
 import org.springframework.boot.autoconfigure.elasticsearch.rest.RestClientAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
-import org.springframework.boot.testsupport.testcontainers.ElasticsearchContainer;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.elasticsearch.core.ElasticsearchRestTemplate;
 import org.springframework.data.elasticsearch.repository.config.EnableElasticsearchRepositories;
@@ -42,39 +44,35 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Andy Wilkinson
  * @author Brian Clozel
  */
-@Testcontainers
-public class ElasticsearchRepositoriesAutoConfigurationTests {
+@Testcontainers(disabledWithoutDocker = true)
+class ElasticsearchRepositoriesAutoConfigurationTests {
 
 	@Container
-	public static ElasticsearchContainer elasticsearch = new ElasticsearchContainer();
+	static final ElasticsearchContainer elasticsearch = new ElasticsearchContainer().withStartupAttempts(5)
+			.withStartupTimeout(Duration.ofMinutes(2));
 
 	private ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-			.withConfiguration(AutoConfigurations.of(ElasticsearchAutoConfiguration.class,
-					RestClientAutoConfiguration.class,
-					ElasticsearchRepositoriesAutoConfiguration.class,
-					ElasticsearchDataAutoConfiguration.class))
-			.withPropertyValues("spring.elasticsearch.rest.uris=localhost:"
-					+ elasticsearch.getMappedHttpPort());
+			.withConfiguration(
+					AutoConfigurations.of(ElasticsearchAutoConfiguration.class, RestClientAutoConfiguration.class,
+							ElasticsearchRepositoriesAutoConfiguration.class, ElasticsearchDataAutoConfiguration.class))
+			.withPropertyValues("spring.elasticsearch.rest.uris=" + elasticsearch.getHttpHostAddress());
 
 	@Test
-	public void testDefaultRepositoryConfiguration() {
-		this.contextRunner.withUserConfiguration(TestConfiguration.class)
-				.run((context) -> assertThat(context).hasSingleBean(CityRepository.class)
-						.hasSingleBean(ElasticsearchRestTemplate.class));
+	void testDefaultRepositoryConfiguration() {
+		this.contextRunner.withUserConfiguration(TestConfiguration.class).run((context) -> assertThat(context)
+				.hasSingleBean(CityRepository.class).hasSingleBean(ElasticsearchRestTemplate.class));
 	}
 
 	@Test
-	public void testNoRepositoryConfiguration() {
+	void testNoRepositoryConfiguration() {
 		this.contextRunner.withUserConfiguration(EmptyConfiguration.class)
-				.run((context) -> assertThat(context)
-						.hasSingleBean(ElasticsearchRestTemplate.class));
+				.run((context) -> assertThat(context).hasSingleBean(ElasticsearchRestTemplate.class));
 	}
 
 	@Test
-	public void doesNotTriggerDefaultRepositoryDetectionIfCustomized() {
+	void doesNotTriggerDefaultRepositoryDetectionIfCustomized() {
 		this.contextRunner.withUserConfiguration(CustomizedConfiguration.class)
-				.run((context) -> assertThat(context)
-						.hasSingleBean(CityElasticsearchDbRepository.class));
+				.run((context) -> assertThat(context).hasSingleBean(CityElasticsearchDbRepository.class));
 	}
 
 	@Configuration(proxyBeanMethods = false)
@@ -91,8 +89,7 @@ public class ElasticsearchRepositoriesAutoConfigurationTests {
 
 	@Configuration(proxyBeanMethods = false)
 	@TestAutoConfigurationPackage(ElasticsearchRepositoriesAutoConfigurationTests.class)
-	@EnableElasticsearchRepositories(
-			basePackageClasses = CityElasticsearchDbRepository.class)
+	@EnableElasticsearchRepositories(basePackageClasses = CityElasticsearchDbRepository.class)
 	static class CustomizedConfiguration {
 
 	}

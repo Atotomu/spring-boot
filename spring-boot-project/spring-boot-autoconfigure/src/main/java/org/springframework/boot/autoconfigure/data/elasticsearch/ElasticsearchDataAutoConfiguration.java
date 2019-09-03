@@ -24,27 +24,30 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.elasticsearch.core.ElasticsearchTemplate;
 import org.springframework.data.elasticsearch.repository.config.EnableElasticsearchRepositories;
+import org.springframework.data.elasticsearch.repository.config.EnableReactiveElasticsearchRepositories;
 
 /**
  * {@link EnableAutoConfiguration Auto-configuration} for Spring Data's Elasticsearch
  * support.
  * <p>
- * Registers an {@link ElasticsearchTemplate} if no other bean of the same type is
- * configured.
+ * Registers an {@link ElasticsearchTemplate} if no other bean of the same type and the
+ * same name {@code "elasticsearchTemplate"} is configured.
  *
  * @author Brian Clozel
  * @author Artur Konczak
  * @author Mohsin Husen
  * @see EnableElasticsearchRepositories
+ * @see EnableReactiveElasticsearchRepositories
  * @since 1.1.0
  */
 @Configuration(proxyBeanMethods = false)
 @ConditionalOnClass({ ElasticsearchTemplate.class })
-@AutoConfigureAfter({ ElasticsearchAutoConfiguration.class,
-		RestClientAutoConfiguration.class })
+@AutoConfigureAfter({ ElasticsearchAutoConfiguration.class, RestClientAutoConfiguration.class,
+		ReactiveRestClientAutoConfiguration.class })
 @Import({ ElasticsearchDataConfiguration.BaseConfiguration.class,
 		ElasticsearchDataConfiguration.TransportClientConfiguration.class,
-		ElasticsearchDataConfiguration.RestHighLevelClientConfiguration.class })
+		ElasticsearchDataConfiguration.RestClientConfiguration.class,
+		ElasticsearchDataConfiguration.ReactiveRestClientConfiguration.class })
 public class ElasticsearchDataAutoConfiguration {
 
 }
